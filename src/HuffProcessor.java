@@ -127,7 +127,7 @@ public class HuffProcessor {
 		
 		// Read compressed bits.
 		HuffNode root = readTreeHeader(in);
-		printTree(root); System.out.println();
+//		printTree(root); System.out.println();
 		HuffNode current = root;
 		while(true) {
 			switch(in.readBits(1)) {
@@ -159,6 +159,10 @@ public class HuffProcessor {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param root
+	 */
 	private static void printTree(HuffNode root) {
 		if(root == null)	return;
 		String val = ""+root.myValue;
