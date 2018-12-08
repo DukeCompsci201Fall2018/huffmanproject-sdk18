@@ -127,17 +127,19 @@ public class HuffProcessor {
 		
 		// Read compressed bits.
 		HuffNode root = readTreeHeader(in);
+		printTree(root); System.out.println();
 		HuffNode current = root;
 		while(true) {
-			int bit = in.readBits(1);
-			if(bit < 0)	throw new HuffException("Bad input, no PSEUDO_EOF.");
-			else {
-				current = (bit == 0) ? current.myLeft : current.myRight;
+			switch(in.readBits(1)) {
+			case -1:	throw new HuffException("Bad input, no PSEUDO_EOF.");
+			case 0:		current = current.myLeft;	break;
+			case 1:		current = current.myRight;	break;
+			default:	throw new HuffException("Bad input, unknown bit.");
+			}
+			if(current.myLeft == null && current.myRight == null) {	// Leaf.
 				if(current.myValue == PSEUDO_EOF)	break;
-				if(current.myValue > 0) {
-					out.writeBits(BITS_PER_WORD, current.myValue);
-					current = root;
-				}
+				out.writeBits(BITS_PER_WORD, current.myValue);
+				current = root;
 			}
 		}
 		out.close();
@@ -152,7 +154,24 @@ public class HuffProcessor {
 		switch(in.readBits(1)) {
 		case -1:	throw new HuffException("Could not read bit.");
 		case 0:		return new HuffNode(0, 0, readTreeHeader(in), readTreeHeader(in));
-		default:	return new HuffNode(in.readBits(BITS_PER_WORD+1), 0, null, null);
+		case 1:		return new HuffNode(in.readBits(BITS_PER_WORD+1), 0, null, null);
+		default:	throw new HuffException("Unknown bit.");
 		}
+	}
+	
+	private static void printTree(HuffNode root) {
+		if(root == null)	return;
+		String val = ""+root.myValue;
+		switch(root.myValue) {
+		case 0:		val = "_";		break;
+		case 9:		val = "\\t";	break;
+		case 10:	val = "\\n";	break;
+		case 32:	val = "\\s";	break;
+		case 256:	val = "EOF";	break;
+		default:	if(root.myValue >= 33 && root.myValue <= 255)	val = ""+(char)root.myValue;
+		}
+		System.out.print(val + " ");
+		printTree(root.myLeft);
+		printTree(root.myRight);
 	}
 }
