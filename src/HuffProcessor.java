@@ -123,7 +123,7 @@ public class HuffProcessor {
 	 */
 	public void decompress(BitInputStream in, BitOutputStream out) {
 		int bits = in.readBits(BITS_PER_INT);
-		if(bits != HUFF_TREE)	throw new HuffException("Illegal header starts with " + bits + ".");
+		if(bits != HUFF_TREE || bits < 0)	throw new HuffException("Illegal header starts with " + bits + ".");
 		
 		// Read compressed bits.
 		HuffNode root = readTreeHeader(in);
