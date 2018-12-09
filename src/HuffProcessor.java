@@ -52,7 +52,7 @@ public class HuffProcessor {
 		counts[PSEUDO_EOF] = 1;
 		
 		// Make tree from counts.
-		Queue<HuffNode> pq = new PriorityQueue<>();
+		PriorityQueue<HuffNode> pq = new PriorityQueue<>();
 		for(int i = 0; i < counts.length; i++)
 			if(counts[i] > 0)
 				pq.add(new HuffNode(i, counts[i], null, null));
@@ -63,9 +63,9 @@ public class HuffProcessor {
 		}
 		HuffNode root = pq.remove();
 		
-		// Make codings from tree.
-		String[] codings = new String[ALPH_SIZE + 1];
-		makeCodings(root, "", codings);
+		// Make encodings from tree.
+		String[] encodings = new String[ALPH_SIZE + 1];
+		makeCodings(root, "", encodings);
 		
 		// Write tree header.
 		out.writeBits(BITS_PER_INT, HUFF_TREE);
@@ -73,36 +73,39 @@ public class HuffProcessor {
 		
 		// Write compressed bits.
 		in.reset();
-		int bit;
-		while((bit = in.readBits(BITS_PER_WORD)) >= 0)
-			out.writeBits(codings[bit].length(), Integer.parseInt(codings[bit], 2));
+		while(true) {
+			int bit = in.readBits(BITS_PER_WORD);
+			if(bit < 0)	break;
+			out.writeBits(encodings[bit].length(), Integer.parseInt(encodings[bit], 2));
+		}
+		out.writeBits(encodings[PSEUDO_EOF].length(), Integer.parseInt(encodings[PSEUDO_EOF], 2));
 		out.close();
 	}
 	
 	/**
-	 * 
-	 * @param root
-	 * @param path
-	 * @param encodings
+	 * Recursively fill the encodings array.
+	 * @param root Root node of the tree header
+	 * @param path Path to leaf
+	 * @param encodings Encodings array
 	 */
 	private void makeCodings(HuffNode root, String path, String[] encodings) {
 		if(root == null)	return;
-		if(root.myLeft == null && root.myRight == null) {
+		if(root.myLeft == null && root.myRight == null) {	// Leaf.
 			encodings[root.myValue] = path;
 			return;
 		}
-		makeCodings(root.myLeft, path+"0", encodings);
+		makeCodings(root.myLeft,  path+"0", encodings);
 		makeCodings(root.myRight, path+"1", encodings);
 	}
 	
 	/**
-	 * 
-	 * @param root
-	 * @param out
+	 * Recursively write the tree header.
+	 * @param root Root node of the tree header
+	 * @param out Buffered bit stream writing to the output file
 	 */
 	private void writeTreeHeader(HuffNode root, BitOutputStream out) {
 		if(root == null)	return;
-		if(root.myLeft == null && root.myRight == null) {
+		if(root.myLeft == null && root.myRight == null) {	// Leaf.
 			out.writeBits(1, 1);
 			out.writeBits(BITS_PER_WORD+1, root.myValue);
 			return;
@@ -127,7 +130,6 @@ public class HuffProcessor {
 		
 		// Read compressed bits.
 		HuffNode root = readTreeHeader(in);
-//		printTree(root); System.out.println();
 		HuffNode current = root;
 		while(true) {
 			switch(in.readBits(1)) {
@@ -146,7 +148,7 @@ public class HuffProcessor {
 	}
 	
 	/**
-	 * Read and build the tree header.
+	 * Recursively read and build the tree header.
 	 * @param in Buffered bit stream of the file to be decompressed
 	 * @return Root node of the tree header
 	 */
@@ -160,8 +162,8 @@ public class HuffProcessor {
 	}
 	
 	/**
-	 * 
-	 * @param root
+	 * Print the tree, for testing purposes.
+	 * @param root Root node of the tree header
 	 */
 	private static void printTree(HuffNode root) {
 		if(root == null)	return;
