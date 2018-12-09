@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -63,9 +64,20 @@ public class HuffProcessor {
 		}
 		HuffNode root = pq.remove();
 		
+		if(myDebugLevel == DEBUG_HIGH) {
+			System.out.println("COUNTS:");
+			System.out.println(Arrays.toString(counts));
+			System.out.println("\nTREE (PRE-ORDER):");
+			printTree(root);
+			System.out.println("\n\nENCODINGS:");
+		}
+		
 		// Make encodings from tree.
 		String[] encodings = new String[ALPH_SIZE + 1];
 		makeCodings(root, "", encodings);
+		
+		if(myDebugLevel == DEBUG_HIGH)
+			System.out.println();
 		
 		// Write tree header.
 		out.writeBits(BITS_PER_INT, HUFF_TREE);
@@ -92,6 +104,8 @@ public class HuffProcessor {
 		if(root == null)	return;
 		if(root.myLeft == null && root.myRight == null) {	// Leaf.
 			encodings[root.myValue] = path;
+			if(myDebugLevel == DEBUG_HIGH)
+				System.out.println("Encoded " + toAscii(root.myValue) + " as " + path);
 			return;
 		}
 		makeCodings(root.myLeft,  path+"0", encodings);
@@ -162,21 +176,30 @@ public class HuffProcessor {
 	}
 	
 	/**
+	 * Converts an int value to its corresponding ASCII char.
+	 * @param val Int value
+	 * @return Corresponding ASCII char
+	 */
+	private static String toAscii(int val) {
+		String text = ""+val;
+		switch(val) {
+		case 0:		text = "_";		break;
+		case 9:		text = "\\t";	break;
+		case 10:	text = "\\n";	break;
+		case 32:	text = "\\s";	break;
+		case 256:	text = "EOF";	break;
+		default:	if(val >= 33 && val <= 255)	text = ""+(char)val;
+		}
+		return text;
+	}
+	
+	/**
 	 * Print the tree, for testing purposes.
 	 * @param root Root node of the tree header
 	 */
 	private static void printTree(HuffNode root) {
 		if(root == null)	return;
-		String val = ""+root.myValue;
-		switch(root.myValue) {
-		case 0:		val = "_";		break;
-		case 9:		val = "\\t";	break;
-		case 10:	val = "\\n";	break;
-		case 32:	val = "\\s";	break;
-		case 256:	val = "EOF";	break;
-		default:	if(root.myValue >= 33 && root.myValue <= 255)	val = ""+(char)root.myValue;
-		}
-		System.out.print(val + " ");
+		System.out.print(toAscii(root.myValue) + " ");
 		printTree(root.myLeft);
 		printTree(root.myRight);
 	}
